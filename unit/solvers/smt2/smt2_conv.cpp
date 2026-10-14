@@ -13,11 +13,13 @@
 #include <util/mathematical_types.h>
 #include <util/message.h>
 #include <util/namespace.h>
+#include <util/pointer_expr.h>
 #include <util/std_expr.h>
 #include <util/symbol_table.h>
 
 #include <solvers/smt2/smt2_conv.h>
 #include <solvers/smt2/smt2_dec.h>
+#include <testing-utils/config_restore.h>
 #include <testing-utils/use_catch.h>
 
 TEST_CASE(
@@ -793,4 +795,24 @@ TEST_CASE(
       out2.str().find("(define-fun z () (_ BitVec 2) (bvand x y))") !=
       std::string::npos);
   }
+}
+
+TEST_CASE(
+  "smt2_convt narrows integer-to-pointer casts to the pointer width",
+  "[core][solvers][smt2][smt2_convt][convert_typecast]")
+{
+  const config_restoret config_restore;
+  const auto pointer_width = GENERATE(std::size_t{32}, std::size_t{64});
+  config.ansi_c.pointer_width = pointer_width;
+  const pointer_typet pointer_type{empty_typet{}, pointer_width};
+  const auto source_id = GENERATE(ID_unsignedbv, ID_signedbv, ID_bv);
+  const bitvector_typet source_type{source_id, pointer_width * 2};
+  const symbol_exprt source{"address", source_type};
+  const typecast_exprt cast{source, pointer_type};
+
+  // SMT-LIB's extract bounds are inclusive: [width - 1:0] has width bits.
+  CHECK(
+    get_assert(notequal_exprt{cast, null_pointer_exprt{pointer_type}}) ==
+    "(assert (not (= ((_ extract " + std::to_string(pointer_width - 1) +
+      " 0) address) (_ bv0 " + std::to_string(pointer_width) + "))))");
 }

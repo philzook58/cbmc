@@ -1,0 +1,8 @@
+CORE smt-backend no-new-smt
+main.c
+--32 --z3
+^EXIT=0$
+^SIGNAL=0$
+^VERIFICATION SUCCESSFUL$
+--
+error running SMT2 solver

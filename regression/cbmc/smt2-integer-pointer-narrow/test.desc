@@ -1,0 +1,11 @@
+CORE no-new-smt
+main.c
+--32 --smt2 --outfile -
+^EXIT=0$
+^SIGNAL=0$
+\(\(_ extract 31 0\) [^\n]*address
+--
+\(\(_ extract 32 0\)
+--
+The nested uint64_t -> uintptr_t -> pointer cast simplifies to a direct
+64-bit integer -> 32-bit pointer cast. Its SMT term must have 32 bits.
